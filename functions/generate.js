@@ -98,11 +98,11 @@ export async function onRequestPost(context) {
   }
 
   const caption = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-  `Tuliskan satu kalimat pendek doa Islami yang indah, lembut, dan bermakna dari kata kunci "${kata}". Jangan beri penjelasan atau tanda baca aneh.`
+  `Tuliskan satu kalimat pendek doa Islami yang indah, lembut, dan bermakna dari kata kunci ini "${kata}". Jangan beri penjelasan atau tanda baca aneh.`
 );
 
 const tags = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-  `Buat maksimal 5 tagar pendek relevan (tanpa simbol #), pisahkan dengan spasi, dari kalimat doa berikut: "${caption}". Hanya keluarkan tagarnya saja.`
+  `Buat maksimal 5 tagar pendek relevan, pisahkan dengan spasi, dari kalimat doa berikut: "${caption}". Hanya keluarkan tagarnya saja tanpa penjelasan apapun.`
 );
 
 const arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
