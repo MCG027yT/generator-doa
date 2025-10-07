@@ -38,6 +38,50 @@ export async function onRequestPost(context) {
     return await res.arrayBuffer();
   }
 
+  // =====================================================
+  // SISTEM ANTRIAN
+  // =====================================================
+  const ip = request.headers.get("CF-Connecting-IP") || crypto.randomUUID();
+  const MAX_PARALLEL = 1;     // hanya 1 proses aktif
+  const AVG_DURATION = 45;    // perkiraan detik per request
+  const QUEUE_KEY = "QUEUE";
+  const LOCK_KEY = "LOCK";
+
+  const rawQ = await AUTPOST.get(QUEUE_KEY);
+  let queue = rawQ ? JSON.parse(rawQ) : [];
+
+  if (!queue.includes(ip)) {
+    queue.push(ip);
+    await AUTPOST.put(QUEUE_KEY, JSON.stringify(queue));
+  }
+
+  const position = queue.indexOf(ip) + 1;
+  if (position > MAX_PARALLEL) {
+    const estimate = (position - 1) * AVG_DURATION;
+    return Response.json({
+      status: "queue",
+      message: `⏳ Kamu antre nomor ${position}. Perkiraan waktu tunggu ± ${estimate} detik.`,
+      position,
+      estimate,
+    });
+  }
+
+  const isLocked = await AUTPOST.get(LOCK_KEY);
+  if (isLocked) {
+    const estimate = AVG_DURATION;
+    return Response.json({
+      status: "queue",
+      message: `⚠️ Server sedang memproses permintaan lain. Perkiraan tunggu ± ${estimate} detik.`,
+      position,
+      estimate,
+    });
+  }
+
+  await AUTPOST.put(LOCK_KEY, "1", { expirationTtl: AVG_DURATION + 15 });
+
+  // =====================================================
+  // PROSES UTAMA GENERATE
+  // =====================================================
   const formData = await request.formData();
   let kata = formData.get("kata")?.trim();
   const gambar = formData.get("gambar");
@@ -87,7 +131,18 @@ export async function onRequestPost(context) {
   });
   const j = await overlayRes.json().catch(() => ({}));
 
+  // =====================================================
+  // SELESAI PROSES → LEPAS LOCK & ANTRIAN
+  // =====================================================
+  await AUTPOST.delete(LOCK_KEY);
+  queue = queue.filter(x => x !== ip);
+  await AUTPOST.put(QUEUE_KEY, JSON.stringify(queue));
+
+  // =====================================================
+  // RESPON AKHIR
+  // =====================================================
   return Response.json({
+    status: "done",
     kata,
     caption,
     tags,
