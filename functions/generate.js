@@ -29,7 +29,13 @@ export async function onRequestPost(context) {
 
   async function runCFImage(accountId, token, model, prompt) {
     const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
-    const payload = { prompt, width: 1080, height: 1080 };
+    const payload = {
+      prompt,
+      width: 1080,
+      height: 1080,
+      guidance_scale: 8,
+      num_inference_steps: 30
+    };
     const res = await fetch(url, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -42,8 +48,8 @@ export async function onRequestPost(context) {
   // SISTEM ANTRIAN
   // =====================================================
   const ip = request.headers.get("CF-Connecting-IP") || crypto.randomUUID();
-  const MAX_PARALLEL = 1;     // hanya 1 proses aktif
-  const AVG_DURATION = 45;    // perkiraan detik per request
+  const MAX_PARALLEL = 1;
+  const AVG_DURATION = 45;
   const QUEUE_KEY = "QUEUE";
   const LOCK_KEY = "LOCK";
 
@@ -98,29 +104,43 @@ export async function onRequestPost(context) {
   }
 
   const caption = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-  `Tuliskan satu kalimat pendek doa Islami yang indah, lembut, dan bermakna dari kata kunci ini "${kata}". Jangan beri penjelasan atau tanda baca aneh.`
-);
+    `Tuliskan satu kalimat pendek doa Islami yang indah, lembut, dan bermakna dari kata kunci ini "${kata}". Jangan beri penjelasan atau tanda baca aneh.`
+  );
 
-const tags = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-  `Buatkan tagar yang sedang viral sesuai caption ini "${caption}". pisahkan dengan spasi tanpa penjelasan apapun.`
-);
+  const tags = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
+    `Buatkan tagar yang sedang viral sesuai caption ini "${caption}". pisahkan dengan spasi tanpa penjelasan apapun.`
+  );
 
-const arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-  `buatkan saya "${kata}". hanya tampilkan tulisan huruf arab lengkap dengan harkat tanpa penjelasan dan keterangan apapun.`
-);
+  const arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
+    `buatkan saya "${kata}". hanya tampilkan tulisan huruf arab lengkap dengan harkat tanpa penjelasan dan keterangan apapun.`
+  );
 
-const indo = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-  `Terjemahkan ke Bahasa Indonesia yang halus dan singkat teks Arab berikut:\n\n${arab}\n\nTampilkan hanya hasil terjemahan tanpa tambahan apapun.`
-);
+  const indo = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
+    `Terjemahkan ke Bahasa Indonesia yang halus dan singkat teks Arab berikut:\n\n${arab}\n\nTampilkan hanya hasil terjemahan tanpa tambahan apapun.`
+  );
 
+  // =====================================================
+  // GENERATE GAMBAR SESUAI KAPTION (MASJID / ALAM)
+  // =====================================================
   let rawImgBase64 = "";
   if (gambar && gambar.name) {
     const buf = await gambar.arrayBuffer();
     rawImgBase64 = arrayBufferToBase64(buf);
   } else {
-    const buf = await runCFImage(CF_ACCOUNT_ID, CF_TOKEN, MODEL_IMG,
-      `Photorealistic HD illustration of: ${kata}, no humans, beautiful, natural light`
-    );
+    const lowerCaption = (caption + " " + kata).toLowerCase();
+    let promptImg = "";
+
+    if (lowerCaption.includes("masjid") || lowerCaption.includes("shalat") || lowerCaption.includes("ibadah")) {
+      promptImg = `Beautiful Islamic mosque under natural sunlight, golden hour, detailed architecture, calm sky, photorealistic HD, cinematic lighting, ultra sharp, realistic colors, natural background`;
+    } else if (lowerCaption.includes("malam") || lowerCaption.includes("bintang") || lowerCaption.includes("bulan")) {
+      promptImg = `Night sky with bright stars and moon over peaceful landscape, gentle natural light, high detail, photorealistic HD`;
+    } else if (lowerCaption.includes("pagi") || lowerCaption.includes("subuh")) {
+      promptImg = `Sunrise over a beautiful mosque and nature, misty golden light, photorealistic, high resolution`;
+    } else {
+      promptImg = `Natural landscape with trees, river, and distant mosque silhouette, peaceful atmosphere, vivid sky, realistic lighting, HD photorealistic style`;
+    }
+
+    const buf = await runCFImage(CF_ACCOUNT_ID, CF_TOKEN, MODEL_IMG, promptImg);
     rawImgBase64 = arrayBufferToBase64(buf);
   }
 
