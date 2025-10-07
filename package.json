@@ -1,0 +1,9 @@
+{
+  "name": "generator-doa",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev",
+    "deploy": "wrangler pages deploy ./public"
+  }
+}
