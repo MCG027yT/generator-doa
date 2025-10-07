@@ -58,15 +58,15 @@ export async function onRequestPost(context) {
   );
 
   const tags = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-    `Buat maksimal 5 tagar relevan untuk caption berikut: "${caption}" (output hanya tagar dipisah spasi)`
+    `Buat maksimal 5 tagar relevan untuk caption berikut: "${caption}" (output hanya tagar dipisah spasi) tanpa penjelasan apapun`
   );
 
   const arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-    `Buat doa singkat dalam bahasa Arab lengkap dengan harakat sesuai kata kunci "${kata}".`
+    `Buat doa singkat dalam bahasa Arab lengkap dengan harakat sesuai kata kunci "${kata}". tanpa penjelasan apapun hanya menampilkan tulisan arab lengkap dengan harkat`
   );
 
   const indo = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-    `Terjemahkan teks Arab berikut ke Bahasa Indonesia singkat:\n\n${arab}`
+    `Terjemahkan teks Arab berikut ke Bahasa Indonesia singkat:\n\n${arab} hanya tampilkan terjemahan tanpa penjelasan apapun`
   );
 
   let rawImgBase64 = "";
