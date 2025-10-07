@@ -102,11 +102,11 @@ export async function onRequestPost(context) {
 );
 
 const tags = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-  `Buat maksimal 5 tagar pendek relevan, pisahkan dengan spasi, dari kalimat doa berikut: "${caption}". Hanya keluarkan tagarnya saja tanpa penjelasan apapun.`
+  `Buatkan tagar yang sedang viral sesuai caption ini "${caption}". pisahkan dengan spasi tanpa penjelasan apapun.`
 );
 
 const arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-  `Tulis doa pendek dalam bahasa Arab lengkap dengan harakat berdasarkan kata kunci "${kata}". Jangan beri terjemahan, catatan, atau tanda kurung. Hanya teks Arab-nya saja.`
+  `buatkan "${kata}". dalam bahasa arab lengkap dengan harkat, hanya menampilkan tulisan arab tanpa penjelasan apapun.`
 );
 
 const indo = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
