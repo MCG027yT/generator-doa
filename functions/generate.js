@@ -106,7 +106,7 @@ const tags = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
 );
 
 const arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-  `buatkan "${kata}". dalam bahasa arab lengkap dengan harkat, hanya menampilkan tulisan arab tanpa penjelasan apapun.`
+  `buatkan "${kata}". secara singkat dalam bahasa arab lengkap dengan harkat, hanya menampilkan tulisan arab tanpa penjelasan apapun.`
 );
 
 const indo = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
