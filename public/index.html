@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generator Doa Harian</title>
+  <style>
+    body { font-family: "Segoe UI", sans-serif; background:#f8f9fa; color:#333; padding:30px; }
+    .container { max-width:700px; margin:auto; background:#fff; padding:25px; border-radius:15px; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+    h1 { text-align:center; color:#0078d7; }
+    label { display:block; margin-top:15px; font-weight:600; }
+    input[type="text"], input[type="file"] {
+      width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; margin-top:5px;
+    }
+    button {
+      background:#0078d7; color:white; border:none; padding:12px 18px; border-radius:8px;
+      margin-top:20px; width:100%; cursor:pointer; font-weight:600;
+    }
+    button:hover { background:#005fa3; }
+    .result { margin-top:25px; border-top:1px solid #ddd; padding-top:20px; }
+    img { max-width:100%; border-radius:12px; margin-top:15px; }
+    .loading { color:#666; text-align:center; margin-top:20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌿 Generator Doa Harian</h1>
+    <form id="formDoa">
+      <label>Kata Kunci (kosongkan untuk otomatis):</label>
+      <input type="text" id="kata" name="kata" placeholder="Contoh: Doa syukur">
+
+      <label>Upload Gambar (opsional):</label>
+      <input type="file" id="gambar" name="gambar" accept="image/*">
+
+      <button type="submit">Generate Doa</button>
+    </form>
+
+    <div class="loading" id="loading" style="display:none;">⏳ Sedang memproses...</div>
+
+    <div class="result" id="result" style="display:none;">
+      <h2>✨ Hasil Doa</h2>
+      <p><b>Kata Kunci:</b> <span id="rKata"></span></p>
+      <p><b>Caption:</b> <span id="rCaption"></span></p>
+      <p><b>Tagar:</b> <span id="rTagar"></span></p>
+      <p><b>Doa Arab:</b><br><span id="rArab" style="font-size:22px; direction:rtl;"></span></p>
+      <p><b>Doa Indonesia:</b><br><span id="rIndo"></span></p>
+      <img id="rImg" src="">
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('formDoa').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const kata = document.getElementById('kata').value.trim();
+      const file = document.getElementById('gambar').files[0];
+      const result = document.getElementById('result');
+      const loading = document.getElementById('loading');
+
+      result.style.display = 'none';
+      loading.style.display = 'block';
+
+      const fd = new FormData();
+      fd.append('kata', kata);
+      if (file) fd.append('gambar', file);
+
+      const res = await fetch('/generate', { method: 'POST', body: fd });
+      const data = await res.json();
+
+      loading.style.display = 'none';
+      if (data.error) { alert("❌ " + data.error); return; }
+
+      document.getElementById('rKata').innerText = data.kata;
+      document.getElementById('rCaption').innerText = data.caption;
+      document.getElementById('rTagar').innerText = data.tags;
+      document.getElementById('rArab').innerText = data.arab;
+      document.getElementById('rIndo').innerText = data.indo;
+      document.getElementById('rImg').src = "data:image/png;base64," + data.final_base64;
+
+      result.style.display = 'block';
+    });
+  </script>
+</body>
+</html>
