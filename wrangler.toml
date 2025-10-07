@@ -1,0 +1,11 @@
+name = "generator-doa"
+compatibility_date = "2024-09-01"
+pages_build_output_dir = "public"
+
+# KV binding
+[[kv_namespaces]]
+binding = "AUTPOST_KV"
+id = "70446eeeab5a4b1580af31f9567222e0"
+
+[vars]
+OVERLAY_API_URL = "https://gtea404.pythonanywhere.com/overlay"
