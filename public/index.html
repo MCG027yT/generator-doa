@@ -19,7 +19,7 @@
     button:hover { background:#005fa3; }
     .result { margin-top:25px; border-top:1px solid #ddd; padding-top:20px; }
     img { max-width:100%; border-radius:12px; margin-top:15px; }
-    .loading { color:#666; text-align:center; margin-top:20px; }
+    .loading { color:#666; text-align:center; margin-top:20px; white-space:pre-line; }
   </style>
 </head>
 <body>
@@ -49,6 +49,25 @@
   </div>
 
   <script>
+    async function postGenerate(fd) {
+      const res = await fetch('/generate', { method: 'POST', body: fd });
+      return await res.json();
+    }
+
+    async function handleQueue(fd) {
+      const loading = document.getElementById('loading');
+      while (true) {
+        const data = await postGenerate(fd);
+        if (data.status === 'queue') {
+          loading.innerText = `⏳ ${data.message}\n\nMenunggu giliran...`;
+          await new Promise(r => setTimeout(r, 5000)); // retry tiap 5 detik
+          continue;
+        }
+        if (data.status === 'done') return data;
+        else { alert("❌ Gagal memproses."); return null; }
+      }
+    }
+
     document.getElementById('formDoa').addEventListener('submit', async (e) => {
       e.preventDefault();
       const kata = document.getElementById('kata').value.trim();
@@ -58,17 +77,16 @@
 
       result.style.display = 'none';
       loading.style.display = 'block';
+      loading.innerText = '⏳ Menghubungkan ke server...';
 
       const fd = new FormData();
       fd.append('kata', kata);
       if (file) fd.append('gambar', file);
 
-      const res = await fetch('/generate', { method: 'POST', body: fd });
-      const data = await res.json();
-
+      const data = await handleQueue(fd);
       loading.style.display = 'none';
-      if (data.error) { alert("❌ " + data.error); return; }
 
+      if (!data) return;
       document.getElementById('rKata').innerText = data.kata;
       document.getElementById('rCaption').innerText = data.caption;
       document.getElementById('rTagar').innerText = data.tags;
