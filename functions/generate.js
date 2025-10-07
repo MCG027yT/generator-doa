@@ -112,7 +112,7 @@ export async function onRequestPost(context) {
   );
 
   const arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-    `buatkan saya "${kata}". hanya tampilkan tulisan huruf arab lengkap dengan harkat tanpa penjelasan dan keterangan apapun.`
+    `buatkan saya doa pendek tentang "${kata}". hanya tampilkan tulisan huruf arab lengkap dengan harkat tanpa penjelasan dan keterangan apapun.`
   );
 
   const indo = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
