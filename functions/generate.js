@@ -98,20 +98,20 @@ export async function onRequestPost(context) {
   }
 
   const caption = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-    `Buat satu kalimat caption doa singkat dari kata kunci "${kata}" dalam Bahasa Indonesia.`
-  );
+  `Tuliskan satu kalimat pendek doa Islami yang indah, lembut, dan bermakna dari kata kunci "${kata}". Jangan beri penjelasan atau tanda baca aneh.`
+);
 
-  const tags = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-    `Buat maksimal 5 tagar relevan untuk caption berikut: "${caption}" (output hanya tagar dipisah spasi) tanpa penjelasan apapun`
-  );
+const tags = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
+  `Buat maksimal 5 tagar pendek relevan (tanpa simbol #), pisahkan dengan spasi, dari kalimat doa berikut: "${caption}". Hanya keluarkan tagarnya saja.`
+);
 
-  const arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-    `Buat doa singkat dalam bahasa Arab lengkap dengan harakat sesuai kata kunci "${kata}". tanpa penjelasan apapun hanya menampilkan tulisan arab lengkap dengan harkat`
-  );
+const arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
+  `Tulis doa pendek dalam bahasa Arab lengkap dengan harakat berdasarkan kata kunci "${kata}". Jangan beri terjemahan, catatan, atau tanda kurung. Hanya teks Arab-nya saja.`
+);
 
-  const indo = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
-    `Terjemahkan teks Arab berikut ke Bahasa Indonesia singkat:\n\n${arab} hanya tampilkan terjemahan tanpa penjelasan apapun`
-  );
+const indo = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
+  `Terjemahkan ke Bahasa Indonesia yang halus dan singkat teks Arab berikut:\n\n${arab}\n\nTampilkan hanya hasil terjemahan tanpa tambahan apapun.`
+);
 
   let rawImgBase64 = "";
   if (gambar && gambar.name) {
