@@ -8,12 +8,24 @@ export async function onRequestPost(context) {
   }
 
   function normalize(s) { return (s || "").trim().replace(/^[\s'"`]+|[\s'"`]+$/g, ""); }
+
   function arrayBufferToBase64(buf) {
     const bytes = new Uint8Array(buf);
     let binary = "";
     for (let i = 0; i < bytes.length; i += 0x8000)
       binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
     return btoa(binary);
+  }
+
+  // Fungsi regex bersihin embel-embel catatan tapi tidak ganggu harkat
+  function bersihkanArab(s) {
+    return (s || "")
+      .replace(/\(.*?\)/gs, "")                 // hapus teks dalam tanda kurung
+      .replace(/Note:[\s\S]*/gi, "")            // hapus catatan "Note: ..."
+      .replace(/Catatan:[\s\S]*/gi, "")         // hapus catatan "Catatan: ..."
+      .replace(/Translation:[\s\S]*/gi, "")     // hapus terjemahan tambahan
+      .replace(/Terjemahan:[\s\S]*/gi, "")
+      .trim();
   }
 
   async function runCFText(accountId, token, model, prompt) {
@@ -111,9 +123,10 @@ export async function onRequestPost(context) {
     `Buatkan tagar yang sedang viral sesuai caption ini "${caption}". pisahkan dengan spasi tanpa penjelasan apapun.`
   );
 
-  const arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
+  let arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
     `buatkan saya doa pendek tentang "${kata}". hanya tampilkan tulisan huruf arab lengkap dengan harkat tanpa penjelasan, keterangan dan perkataan apapun.`
   );
+  arab = bersihkanArab(arab);
 
   const indo = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
     `Terjemahkan ke Bahasa Indonesia yang halus dan singkat teks Arab berikut:\n\n${arab}\n\nTampilkan hanya hasil terjemahan tanpa tambahan apapun.`
