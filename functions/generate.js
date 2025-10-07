@@ -1,0 +1,98 @@
+export async function onRequestPost(context) {
+  const { env, request } = context;
+  const AUTPOST = env.AUTPOST_KV;
+  const OVERLAY_API = env.OVERLAY_API_URL;
+
+  async function kvGet(key) {
+    try { return await AUTPOST.get(key); } catch { return null; }
+  }
+
+  function normalize(s) { return (s || "").trim().replace(/^[\s'"`]+|[\s'"`]+$/g, ""); }
+  function arrayBufferToBase64(buf) {
+    const bytes = new Uint8Array(buf);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 0x8000)
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(binary);
+  }
+
+  async function runCFText(accountId, token, model, prompt) {
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
+    });
+    const j = await res.json().catch(() => ({}));
+    return normalize(j?.result?.response || j?.output?.[0]?.content || "");
+  }
+
+  async function runCFImage(accountId, token, model, prompt) {
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
+    const payload = { prompt, width: 1080, height: 1080 };
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return await res.arrayBuffer();
+  }
+
+  const formData = await request.formData();
+  let kata = formData.get("kata")?.trim();
+  const gambar = formData.get("gambar");
+
+  const CF_ACCOUNT_ID = await kvGet("cf_AkunID");
+  const CF_TOKEN = await kvGet("cf_token");
+  const MODEL_TXT = (await kvGet("model_txt")) || "@cf/meta/llama-3-8b-instruct";
+  const MODEL_IMG = (await kvGet("model_img")) || "@cf/stabilityai/stable-diffusion-xl-base-1.0";
+
+  if (!kata) {
+    const raw = await kvGet("kata_kunci");
+    const list = raw ? raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean) : [];
+    kata = list.length ? list[Math.floor(Math.random() * list.length)] : "Doa Harian";
+  }
+
+  const caption = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
+    `Buat satu kalimat caption doa singkat dari kata kunci "${kata}" dalam Bahasa Indonesia.`
+  );
+
+  const tags = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
+    `Buat maksimal 5 tagar relevan untuk caption berikut: "${caption}" (output hanya tagar dipisah spasi)`
+  );
+
+  const arab = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
+    `Buat doa singkat dalam bahasa Arab lengkap dengan harakat sesuai kata kunci "${kata}".`
+  );
+
+  const indo = await runCFText(CF_ACCOUNT_ID, CF_TOKEN, MODEL_TXT,
+    `Terjemahkan teks Arab berikut ke Bahasa Indonesia singkat:\n\n${arab}`
+  );
+
+  let rawImgBase64 = "";
+  if (gambar && gambar.name) {
+    const buf = await gambar.arrayBuffer();
+    rawImgBase64 = arrayBufferToBase64(buf);
+  } else {
+    const buf = await runCFImage(CF_ACCOUNT_ID, CF_TOKEN, MODEL_IMG,
+      `Photorealistic HD illustration of: ${kata}, no humans, beautiful, natural light`
+    );
+    rawImgBase64 = arrayBufferToBase64(buf);
+  }
+
+  const overlayRes = await fetch(OVERLAY_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image_base64: rawImgBase64, title: kata, arab, indo }),
+  });
+  const j = await overlayRes.json().catch(() => ({}));
+
+  return Response.json({
+    kata,
+    caption,
+    tags,
+    arab,
+    indo,
+    final_base64: j.final_base64 || rawImgBase64,
+  });
+}
